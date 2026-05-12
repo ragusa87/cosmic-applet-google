@@ -160,6 +160,9 @@ containing `client_secret`, `refresh_token`, `access_token`, and
   in "Testing" mode, refresh tokens expire after 7 days. Either re-authorize
   once a week, or move the app to "In production" (still no review needed
   for a single-user desktop client).
+- **Authorization fails or returns stale state** → reset the OAuth connection
+  by removing the app from <https://myaccount.google.com/connections>, then
+  re-authorize from the Credentials window.
 
 ## Scope rationale
 
