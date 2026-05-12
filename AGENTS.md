@@ -53,8 +53,8 @@ src/
 │                  fetch_interval_secs, display_tick_secs,
 │                  notification_lead_secs, notify,
 │                  show_title, show_time, show_progress
-├── secrets.rs     keyring wrapper — stores a JSON blob keyed by email under
-│                  service "cosmic-applet-google-agenda:tokens" (sync API
+├── secrets.rs     keyring wrapper — stores a JSON blob keyed by
+│                  email under service APP_ID (sync API
 │                  wrapped in spawn_blocking)
 ├── auth.rs        OAuth 2.0 PKCE + loopback redirect via the `oauth2`
 │                  crate; exports `start_oauth_flow` + `refresh`.
@@ -79,7 +79,7 @@ data/
 | Item | Where | Reason |
 |---|---|---|
 | `email`, `client_id`, `fetch_interval_secs`, `display_tick_secs`, `notification_lead_secs`, `notify`, `show_title`, `show_time`, `show_progress` | cosmic-config (RON in `~/.config/com.github.ragusa87.CosmicAppletGoogleAgenda/v1/`) | non-secret, watched live |
-| `client_secret`, `refresh_token`, `access_token`, `expires_at_unix` | Secret Service via `keyring` v3, one JSON blob keyed by `email` under service `cosmic-applet-google-agenda:tokens` | secrets |
+| `client_secret`, `refresh_token`, `access_token`, `expires_at_unix` | Secret Service via `keyring` v3, one JSON blob keyed by `email` under service `APP_ID` | secrets |
 
 Cross-binary propagation: the settings binary writes both. The applet's
 `watch_config::<Config>` subscription delivers `Message::UpdateConfig` when
