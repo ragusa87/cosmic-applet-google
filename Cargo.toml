@@ -1,0 +1,40 @@
+[workspace]
+resolver = "3"
+members = [
+    "cosmic-google-common",
+    "cosmic-applet-gmail",
+    "cosmic-applet-google-agenda",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "GPL-3.0-or-later"
+authors = ["Laurent Constantin"]
+
+[workspace.dependencies]
+anyhow = "1"
+chrono = { version = "0.4", default-features = false, features = ["serde", "clock"] }
+futures-util = "0.3"
+keyring = { version = "3", default-features = false, features = ["sync-secret-service", "crypto-rust"] }
+libc = "0.2"
+notify-rust = "4"
+oauth2 = "5"
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "1"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "io-util", "time", "process", "sync", "signal"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+url = "2"
+
+libcosmic = { git = "https://github.com/pop-os/libcosmic.git", default-features = false, features = ["applet", "applet-token", "dbus-config", "multi-window", "tokio", "wayland", "winit"] }
+cosmic-config = { git = "https://github.com/pop-os/libcosmic.git", package = "cosmic-config" }
+cosmic-config-derive = { git = "https://github.com/pop-os/libcosmic.git", package = "cosmic-config-derive" }
+
+cosmic-google-common = { path = "cosmic-google-common" }
+
+[profile.release]
+opt-level = 3
+lto = true
