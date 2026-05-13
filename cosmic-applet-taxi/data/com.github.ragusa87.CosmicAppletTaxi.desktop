@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=Taxi Tracker
+Comment=Track time and export to a taxi timesheet from the COSMIC panel
+Exec=cosmic-applet-taxi
+Icon=com.github.ragusa87.CosmicAppletTaxi
+Terminal=false
+Categories=COSMIC;X-COSMIC-Applet;
+NoDisplay=true
+X-CosmicApplet=true
+X-CosmicHoverPopup=Auto
+X-OverflowPriority=2

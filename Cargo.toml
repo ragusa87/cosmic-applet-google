@@ -4,6 +4,7 @@ members = [
     "cosmic-google-common",
     "cosmic-applet-gmail",
     "cosmic-applet-google-agenda",
+    "cosmic-applet-taxi",
 ]
 
 [workspace.package]
@@ -15,19 +16,25 @@ authors = ["Laurent Constantin"]
 [workspace.dependencies]
 anyhow = "1"
 chrono = { version = "0.4", default-features = false, features = ["serde", "clock"] }
+configparser = "3"
+dirs = "5"
 futures-util = "0.3"
 keyring = { version = "3", default-features = false, features = ["sync-secret-service", "crypto-rust"] }
 libc = "0.2"
 notify-rust = "4"
 oauth2 = "5"
+regex = "1"
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+shell-words = "1"
 thiserror = "1"
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "io-util", "time", "process", "sync", "signal"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 url = "2"
+uuid = { version = "1", features = ["v4", "serde"] }
+zbus = { version = "5", default-features = false, features = ["tokio"] }
 
 libcosmic = { git = "https://github.com/pop-os/libcosmic.git", default-features = false, features = ["applet", "applet-token", "dbus-config", "multi-window", "tokio", "wayland", "winit"] }
 cosmic-config = { git = "https://github.com/pop-os/libcosmic.git", package = "cosmic-config" }
@@ -38,3 +45,11 @@ cosmic-google-common = { path = "cosmic-google-common" }
 [profile.release]
 opt-level = 3
 lto = true
+
+# Optimized but skips the LTO link pass — useful while iterating on a single
+# applet. Cuts each binary's release link from ~5–7 min to ~30–60 s on a
+# 16-thread machine. Use via `just build-fast <crate>` or `cargo build
+# --profile=release-fast -p <crate>`.
+[profile.release-fast]
+inherits = "release"
+lto = false

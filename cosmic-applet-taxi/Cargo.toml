@@ -1,0 +1,33 @@
+[package]
+name = "cosmic-applet-taxi"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "COSMIC panel applet — time tracker with taxi/Zebra timesheet export"
+repository = "https://github.com/ragusa87/cosmic-applet-taxi"
+
+[[bin]]
+name = "cosmic-applet-taxi"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = { workspace = true }
+chrono = { workspace = true }
+configparser = { workspace = true }
+dirs = { workspace = true }
+futures-util = { workspace = true }
+libc = { workspace = true }
+regex = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+shell-words = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+uuid = { workspace = true }
+zbus = { workspace = true }
+
+libcosmic = { workspace = true }
+cosmic-config = { workspace = true }
+cosmic-config-derive = { workspace = true }

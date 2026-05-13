@@ -1,14 +1,16 @@
-# cosmic-applet-google
+# cosmic-applet for productivity (google+taxi)
 
-A pair of COSMIC desktop panel applets that surface bits of your Google
-account in the panel:
+Three COSMIC desktop panel applets — two that surface bits of your Google
+account, one that tracks time and exports to a [taxi](https://github.com/sephii/taxi)
+timesheet:
 
 | Applet | Binary | What it shows | Icon |
 |---|---|---|---|
 | [Gmail Unread](#gmail-applet) | `cosmic-applet-gmail` | Number of unread Gmail messages, refreshed periodically. |![gmail-preview.png](cosmic-applet-gmail/gmail-preview.png)|
 | [Next meeting](#google-agenda-applet) | `cosmic-applet-google-agenda` | Next Google Calendar event with a live countdown, plus a desktop notification a few minutes before it starts. |![calendar-preview.png](cosmic-applet-google-agenda/calendar-preview.png)|
+| [Taxi tracker](#taxi-tracker-applet) | `cosmic-applet-taxi` | Multi-timer time tracking with daily auto-export to `taxi` (e.g. Liip's Zebra). | |
 
-Both applets follow the same model:
+The two Google-backed applets follow the same model:
 
 - **Left-click** the panel item → opens a useful URL (Gmail inbox / next
   event's Meet link, falling back to <https://calendar.google.com>).
@@ -23,6 +25,10 @@ Both applets follow the same model:
   so adding more Google-backed applets later only requires implementing the
   applet-specific UI and API call.
 
+The third applet, `cosmic-applet-taxi`, is unrelated to Google — it tracks
+local time and pushes merged + rounded sessions to your `~/zebra/%Y/%m.tks`
+timesheet via the `taxi` CLI (invoked through `uv run`).
+
 ## Build & install
 
 Requires Rust 1.85+ (for `edition = "2024"`), `just`, and a working Wayland
@@ -36,9 +42,9 @@ just install-user        # installs both applets into ~/.local; use `sudo just i
 
 `just install-user` lays each applet's binary, desktop entry, and icon into:
 
-- `~/.local/bin/cosmic-applet-{gmail,google-agenda}`
-- `~/.local/share/applications/com.github.ragusa87.CosmicApplet{Gmail,GoogleAgenda}.desktop`
-- `~/.local/share/icons/hicolor/scalable/apps/com.github.ragusa87.CosmicApplet{Gmail,GoogleAgenda}.svg`
+- `~/.local/bin/cosmic-applet-{gmail,google-agenda,taxi}`
+- `~/.local/share/applications/com.github.ragusa87.CosmicApplet{Gmail,GoogleAgenda,Taxi}.desktop`
+- `~/.local/share/icons/hicolor/scalable/apps/com.github.ragusa87.CosmicApplet{Gmail,GoogleAgenda,Taxi}.svg`
 
 > ⚠️ `~/.local/bin` must be on your `$PATH` — the panel runs the binary by
 > name (`Exec=cosmic-applet-gmail` / `Exec=cosmic-applet-google-agenda`)
@@ -140,18 +146,20 @@ Each applet polls on its own cadence. To trigger an immediate refresh:
 ```sh
 pkill -USR2 -f cosmic-applet-gmail            # poll Gmail right now
 pkill -USR2 -f cosmic-applet-google-agenda    # refetch calendar right now
+pkill -USR2 -f cosmic-applet-taxi             # reload taxi state right now
 ```
 
-Or, to signal both at once:
+Or, to signal all three at once:
 
 ```sh
 just refresh
 ```
 
-On receiving SIGUSR2, the applet reloads the OAuth tokens from Secret
-Service and fetches right away. The settings windows (running under the
-same binary names) ignore SIGUSR2, so sending the signal to all processes
-with that name is safe — only the panel applet acts on it.
+On receiving SIGUSR2, the Google applets reload the OAuth tokens from
+Secret Service and fetch right away; the taxi applet reloads its state
+file and re-detects `uv`. The settings windows (running under the same
+binary names) ignore SIGUSR2, so sending the signal to all processes with
+that name is safe — only the panel applet acts on it.
 
 ### Pre-filling credentials from the environment
 
@@ -251,6 +259,75 @@ exposes event titles, times, and conference data. The applet calls
 events, never sees attendee details beyond your own RSVP status, and never
 touches other calendars.
 
+## Taxi tracker applet
+
+A multi-timer time tracker that auto-exports merged + rounded sessions to
+your [taxi](https://github.com/sephii/taxi) timesheet. Designed for the
+"start a timer, switch tickets, forget to stop it before lunch, panic at
+the end of the day" workflow.
+
+**What it does:**
+
+- One panel button. Left-click opens a popup with one row per timer
+  (alias + description + live elapsed + ▶/⏸ button).
+- Each timer carries an `alias` (taxi-native, autocompleted from your
+  `taxirc` + `taxi alias list`) and a per-session description. Editing
+  the description on a running session updates the timer's default so
+  the next start pre-fills with it.
+- **One timer at a time** — clicking ▶ on a paused row pauses whatever
+  was running first. No overlapping ranges to clean up.
+- While running, the panel button shows
+  `[⏱ _hello: TICKET-1 Setup 01:23 · 04:32]`.
+- **fixme: Auto-pause on screen lock / suspend** via DBus
+  (`org.freedesktop.ScreenSaver`, `org.freedesktop.login1`).
+- **Daily auto-export (Untested)** at a configurable cut-over hour (default `04:00`):
+  for each closed session whose work-date is in the past, merge gaps
+  under 5 min, round each merged span to ≥ 15 min, append the lines to
+  `~/zebra/%Y/%m.tks`, and drop them from local state.
+- **Manual Export…** dialog for an arbitrary date — preview the merged
+  lines, then confirm to append.
+- **Auto-derived timer list**: on startup the applet scans the current
+  and previous month's `.tks` and seeds a row per distinct alias used,
+  pre-filled with the most recent description. Deleting a row
+  suppresses that alias from future auto-derivation.
+
+**Requirements:**
+
+The applet *runs* fine without anything but COSMIC + a Wayland session.
+**Taxi features** (alias refresh, export, auto-export) need
+[`uv`](https://docs.astral.sh/uv/) on `$PATH`. The applet calls taxi as
+`uv run --with taxi,taxi-zebra taxi <args>` (configurable). If `uv` is
+not installed, taxi features are hidden from the UI and a small
+"Install `uv` to enable taxi export" caption shows in the popup; the
+timer functionality still works.
+
+Your existing `~/.config/taxi/taxirc` is read directly for the path
+template (`[taxi].file`, default `~/zebra/%Y/%m.tks`), date format
+(`[taxi].date_format`), and alias sections (`[default_aliases]`,
+`[<backend>_aliases]`).
+
+**Configuration** — non-secret settings live in
+`~/.config/com.github.ragusa87.CosmicAppletTaxi/v1/`:
+
+| Key                   | Default                                     | Notes                                          |
+|-----------------------|---------------------------------------------|------------------------------------------------|
+| `cutover_hour`        | `4`                                         | Anything before this hour is the previous day. |
+| `merge_gap_minutes`   | `5`                                         | Pause/resume gaps under this collapse to one entry. |
+| `round_min_minutes`   | `15`                                        | Each merged span rounded up to at least this.  |
+| `taxi_command`        | `uv run --with taxi,taxi-zebra taxi`        | Whitespace-split, args appended.               |
+| `taxirc_path`         | `""`                                        | Blank → resolve `~/.config/taxi/taxirc`.       |
+
+State (timer list + sessions) lives in
+`~/.local/state/cosmic-applet-taxi/state.json`. Aliases cached by
+`taxi alias list` live alongside it.
+
+Open the settings or export window directly:
+
+```sh
+cosmic-applet-taxi --show-settings
+cosmic-applet-taxi --show-export
+```
+
 ## Troubleshooting
 
 - **Gmail panel shows `—` forever** → the applet has no credentials;
@@ -277,10 +354,11 @@ touches other calendars.
 ```
 cosmic-applet-google/
 ├── Cargo.toml                       # workspace root
-├── justfile                         # build/install/uninstall for both applets
-├── cosmic-google-common/            # shared OAuth2 + Secret Service helpers
+├── justfile                         # build/install/uninstall for all three applets
+├── cosmic-google-common/            # shared OAuth2 + Secret Service helpers (gmail + agenda)
 ├── cosmic-applet-gmail/             # Gmail Unread applet
-└── cosmic-applet-google-agenda/     # Next meeting applet
+├── cosmic-applet-google-agenda/     # Next meeting applet
+└── cosmic-applet-taxi/              # Time tracker + taxi/Zebra exporter
 ```
 
 ## License
