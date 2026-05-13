@@ -3,6 +3,11 @@ use cosmic_config_derive::CosmicConfigEntry;
 
 pub const APP_ID: &str = "com.github.ragusa87.CosmicAppletGoogleAgenda";
 
+/// Service string under which OAuth tokens are stored in the freedesktop
+/// Secret Service. Agenda historically used the bare `APP_ID`; preserved here
+/// so existing keyring entries continue to load.
+pub const KEYRING_SERVICE: &str = APP_ID;
+
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Clone, CosmicConfigEntry, Eq, PartialEq)]
 #[version = 1]

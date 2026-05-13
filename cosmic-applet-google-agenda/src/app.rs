@@ -11,10 +11,11 @@ use cosmic_config::CosmicConfigEntry;
 use futures_util::SinkExt;
 use tokio::signal::unix::{SignalKind, signal};
 
-use crate::auth;
+use cosmic_google_common::auth;
+use cosmic_google_common::secrets::{self, Tokens};
+
 use crate::calendar::{self, Event};
-use crate::config::{APP_ID, Config};
-use crate::secrets::{self, Tokens};
+use crate::config::{APP_ID, Config, KEYRING_SERVICE};
 use crate::ui;
 
 const CALENDAR_URL: &str = "https://calendar.google.com";
@@ -84,7 +85,7 @@ impl cosmic::Application for AppModel {
         let task = if config.is_configured() {
             let email = config.email.clone();
             cosmic::task::future(async move {
-                let tokens = secrets::load(&email).await.ok();
+                let tokens = secrets::load(KEYRING_SERVICE, &email).await.ok();
                 Message::TokensLoaded(tokens)
             })
         } else {
@@ -349,7 +350,7 @@ impl cosmic::Application for AppModel {
                 if email_changed && !self.config.email.is_empty() {
                     let email = self.config.email.clone();
                     return cosmic::task::future(async move {
-                        let tokens = secrets::load(&email).await.ok();
+                        let tokens = secrets::load(KEYRING_SERVICE, &email).await.ok();
                         Message::TokensLoaded(tokens)
                     });
                 }
@@ -453,7 +454,7 @@ async fn refresh_and_fetch(
         tokens
     } else {
         let new = auth::refresh(client_id, &tokens).await?;
-        if let Err(e) = secrets::save(email, &new).await {
+        if let Err(e) = secrets::save(KEYRING_SERVICE, email, &new).await {
             tracing::warn!(error = %e, "failed to persist refreshed tokens");
         }
         new

@@ -3,6 +3,11 @@ use cosmic_config_derive::CosmicConfigEntry;
 
 pub const APP_ID: &str = "com.github.ragusa87.CosmicAppletGmail";
 
+/// Service string under which OAuth tokens are stored in the freedesktop
+/// Secret Service. Distinct from `APP_ID` for backwards-compat with tokens
+/// that existing installs already wrote under this key.
+pub const KEYRING_SERVICE: &str = "com.github.ragusa87.CosmicAppletGmail:tokens";
+
 #[derive(Debug, Clone, CosmicConfigEntry, Eq, PartialEq)]
 #[version = 1]
 pub struct Config {

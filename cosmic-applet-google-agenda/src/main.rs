@@ -1,9 +1,7 @@
 mod app;
-mod auth;
 mod calendar;
 mod config;
 mod debug;
-mod secrets;
 mod settings;
 mod ui;
 

@@ -3,10 +3,10 @@ use std::collections::BTreeMap;
 use anyhow::{Context, Result};
 use cosmic_config::CosmicConfigEntry;
 
-use crate::auth;
+use cosmic_google_common::{auth, secrets};
+
 use crate::calendar::{self, DebugItem};
-use crate::config::{APP_ID, Config};
-use crate::secrets;
+use crate::config::{APP_ID, Config, KEYRING_SERVICE};
 
 pub fn run() -> Result<()> {
     let rt = tokio::runtime::Builder::new_current_thread()
@@ -52,7 +52,7 @@ async fn run_async() -> Result<()> {
     }
 
     println!("Loading tokens from Secret Service for {}...", config.email);
-    let tokens = match secrets::load(&config.email).await {
+    let tokens = match secrets::load(KEYRING_SERVICE, &config.email).await {
         Ok(t) => t,
         Err(e) => {
             println!("  failed: {e}");

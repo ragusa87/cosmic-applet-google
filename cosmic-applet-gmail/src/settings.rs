@@ -2,11 +2,14 @@ use cosmic::Element;
 use cosmic::app::Task;
 use cosmic::iced::{self, Size};
 use cosmic_config::CosmicConfigEntry;
+use cosmic_google_common::auth::{self, OAuthParams};
+use cosmic_google_common::secrets::{self, Tokens};
 
-use crate::auth;
-use crate::config::{APP_ID, Config};
-use crate::secrets::{self, Tokens};
+use crate::config::{APP_ID, Config, KEYRING_SERVICE};
 use crate::ui::{self, CredentialsForm, CredentialsHandlers, Status};
+
+const SCOPE: &str = "https://www.googleapis.com/auth/gmail.metadata";
+const SUCCESS_HTML: &str = "<!doctype html><html><head><meta charset=\"utf-8\"><title>Authorization complete</title></head><body style=\"font-family:sans-serif;text-align:center;padding-top:4em\"><h1>You can close this tab</h1><p>The Gmail applet has received your authorization.</p></body></html>";
 
 pub fn run() -> iced::Result {
     // Both modes ship in the same binary, so `pkill -USR2 cosmic-applet-gmail`
@@ -78,7 +81,7 @@ impl cosmic::Application for SettingsApp {
         let task = if config.is_configured() {
             let email = config.email.clone();
             cosmic::task::future(async move {
-                let tokens = secrets::load(&email).await.ok();
+                let tokens = secrets::load(KEYRING_SERVICE, &email).await.ok();
                 Msg::LoadTokens(tokens)
             })
         } else {
@@ -132,7 +135,8 @@ impl cosmic::Application for SettingsApp {
                 let client_secret = self.form.client_secret.clone();
 
                 return cosmic::task::future(async move {
-                    let result = auth::start_oauth_flow(client_id.clone(), client_secret).await;
+                    let params = OAuthParams { scope: SCOPE, success_html: SUCCESS_HTML };
+                    let result = auth::start_oauth_flow(params, client_id.clone(), client_secret).await;
                     let result = result
                         .map(|tokens| (email, client_id, tokens))
                         .map_err(|e| e.to_string());
@@ -156,7 +160,7 @@ impl cosmic::Application for SettingsApp {
                 }
 
                 return cosmic::task::future(async move {
-                    if let Err(e) = secrets::save(&email, &tokens).await {
+                    if let Err(e) = secrets::save(KEYRING_SERVICE, &email, &tokens).await {
                         tracing::warn!(error = %e, "failed to persist tokens");
                     }
                     Msg::SavedAndExit

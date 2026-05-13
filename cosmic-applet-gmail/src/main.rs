@@ -1,8 +1,6 @@
 mod app;
-mod auth;
 mod config;
 mod gmail;
-mod secrets;
 mod settings;
 mod ui;
 
